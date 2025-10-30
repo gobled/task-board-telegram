@@ -1,7 +1,7 @@
 import base64
 from contextlib import asynccontextmanager
 from http import HTTPStatus
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler
 from telegram.ext._contexttypes import ContextTypes
 from fastapi import FastAPI, Request, Response
@@ -58,27 +58,31 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         webapp_url = f"{WEBAPP_URL}?startapp={encoded_group_id}"
 
         # Create inline keyboard with Web App button and Direct Link button
-        inline_keyboard = []
+        buttons = []
 
         # Add Web App button
-        inline_keyboard.append({
-            "text": "Open",
-            "web_app": {"url": webapp_url}
-        })
+        buttons.append(
+            InlineKeyboardButton(
+                text="Open",
+                web_app=WebAppInfo(url=webapp_url)
+            )
+        )
 
         # Add Direct Link button if configured
         if DIRECT_LINK:
-            inline_keyboard.append({
-                "text": "Open",
-                "url": DIRECT_LINK
-            })
+            buttons.append(
+                InlineKeyboardButton(
+                    text="Open",
+                    url=DIRECT_LINK
+                )
+            )
+
+        keyboard = InlineKeyboardMarkup([buttons])
 
         await context.bot.send_message(
             chat_id=chat_id,
             text="Welcome to TaskVaultBot! 🚀\nTap the button below to launch the Mini App.",
-            reply_markup={
-                "inline_keyboard": [inline_keyboard]
-            }
+            reply_markup=keyboard
         )
         print(f"Handled /start for chat_id: {chat_id}")
     except Exception as e:
@@ -94,27 +98,31 @@ async def webapp(update: Update, context: ContextTypes.DEFAULT_TYPE):
         webapp_url = f"{WEBAPP_URL}?startapp={encoded_group_id}"
 
         # Create inline keyboard with Web App button and Direct Link button
-        inline_keyboard = []
+        buttons = []
 
         # Add Web App button
-        inline_keyboard.append({
-            "text": "Open",
-            "web_app": {"url": webapp_url}
-        })
+        buttons.append(
+            InlineKeyboardButton(
+                text="Open",
+                web_app=WebAppInfo(url=webapp_url)
+            )
+        )
 
         # Add Direct Link button if configured
         if DIRECT_LINK:
-            inline_keyboard.append({
-                "text": "Open",
-                "url": DIRECT_LINK
-            })
+            buttons.append(
+                InlineKeyboardButton(
+                    text="Open",
+                    url=DIRECT_LINK
+                )
+            )
+
+        keyboard = InlineKeyboardMarkup([buttons])
 
         await context.bot.send_message(
             chat_id=chat_id,
             text="Here you go 👇",
-            reply_markup={
-                "inline_keyboard": [inline_keyboard]
-            }
+            reply_markup=keyboard
         )
     except Exception as e:
         print(f"Error handling /webapp for chat_id {chat_id}: {e}")
