@@ -1,5 +1,5 @@
 const { Telegraf, Markup } = require('telegraf');
-const { BOT_TOKEN, WEBAPP_URL } = require('./config');
+const { BOT_TOKEN, WEBAPP_URL, DIRECT_LINK } = require('./config');
 
 if (!BOT_TOKEN) {
   throw new Error('BOT_TOKEN must be provided!');
@@ -36,9 +36,15 @@ async function sendWebAppButton(ctx: any, message = 'Open the Mini App to get st
     console.warn('Unable to set chat-specific menu button:', error);
   }
 
-  const keyboard = Markup.inlineKeyboard([
-    Markup.button.webApp('Open', url),
-  ]);
+  // Create keyboard with both Web App button and Direct Link button
+  const buttons = [Markup.button.webApp('Open', url)];
+
+  // Add direct link button if DIRECT_LINK is configured
+  if (DIRECT_LINK) {
+    buttons.push(Markup.button.url('Open', DIRECT_LINK));
+  }
+
+  const keyboard = Markup.inlineKeyboard([buttons]);
 
   await ctx.reply(message, keyboard);
 }
