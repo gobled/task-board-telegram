@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { retrieveLaunchParams, type LaunchParams } from "@telegram-apps/sdk";
 import type { ThemeParams, WebApp } from "telegram-web-app";
-import { useLaunchParams } from "@telegram-apps/sdk-react";
 import { getTelegramWebApp } from "@/app/lib/telegram";
 
 type LogTone = "info" | "success" | "error";
@@ -61,7 +61,7 @@ const themeColor = (params: ThemeParams | null, key: keyof ThemeParams) => {
 };
 
 export default function HomePage() {
-  const launchParams = useLaunchParams();
+  const [launchParams, setLaunchParams] = useState<LaunchParams | null>(null);
   const [webApp, setWebApp] = useState<WebApp | null>(null);
   const [colorScheme, setColorScheme] = useState<WebApp["colorScheme"]>("light");
   const [themeParams, setThemeParams] = useState<ThemeParams | null>(null);
@@ -88,6 +88,14 @@ export default function HomePage() {
   const [qrResult, setQrResult] = useState<string | null>(null);
   const [biometricStatus, setBiometricStatus] = useState("Not initialised");
   const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+
+  useEffect(() => {
+    try {
+      setLaunchParams(retrieveLaunchParams());
+    } catch (error) {
+      console.warn("Unable to retrieve launch params", error);
+    }
+  }, []);
 
   const addLog = useCallback(
     (message: string, tone: LogTone = "info") => {
