@@ -44,7 +44,7 @@ async function sendWebAppButton(ctx: any, message = 'Open the Mini App to get st
     buttons.push(Markup.button.url('Open', DIRECT_LINK));
   }
 
-  const keyboard = Markup.inlineKeyboard([buttons]);
+  const keyboard = Markup.inlineKeyboard(buttons);
 
   await ctx.reply(message, keyboard);
 }
