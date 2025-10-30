@@ -374,7 +374,6 @@ export default function HomePage() {
     webApp.BiometricManager.authenticate(
       {
         reason: "Demo authentication",
-        nonce: Math.random().toString(36).slice(2),
       },
       (success, token) => {
         if (success) {
@@ -552,8 +551,8 @@ export default function HomePage() {
           >
             <div className="space-y-2">
               <p>Start parameter: {launchParams?.startParam ?? "—"}</p>
-              <p>User: {launchParams?.user?.firstName ?? "—"}</p>
-              <p>Chat type: {launchParams?.chat?.type ?? "—"}</p>
+              <p>User: {launchParams?.initData?.user?.firstName ?? "—"}</p>
+              <p>Chat type: {launchParams?.initData?.chat?.type ?? "—"}</p>
             </div>
             <div className="space-y-2">
               <p className="font-medium">Theme palette</p>
