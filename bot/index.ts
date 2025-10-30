@@ -8,8 +8,24 @@ if (!BOT_TOKEN) {
 const bot = new Telegraf(BOT_TOKEN, { telegram: { testEnv: true } });
 
 // Basic commands
+function sendWebAppButton(ctx: any, message = 'Open the Mini App to get started!') {
+  const chatId = ctx.chat.id;
+  const encodedGroupId = Buffer.from(chatId.toString()).toString('base64');
+
+  console.log('Chat ID:', chatId);
+  console.log('Encoded Group ID:', encodedGroupId);
+
+  return ctx.reply(message, {
+    reply_markup: {
+      inline_keyboard: [[
+        { text: 'Open', web_app: { url: `${WEBAPP_URL}?startapp=${encodedGroupId}` } }
+      ]]
+    }
+  });
+}
+
 bot.command('start', (ctx: any) => {
-  ctx.reply('Welcome to TaskVaultBot! 🚀\nUse /help to see available commands.');
+  sendWebAppButton(ctx, 'Welcome to TaskVaultBot! 🚀\nTap the button below to launch the Mini App.');
 });
 
 bot.command('help', (ctx: any) => {
@@ -22,20 +38,7 @@ bot.command('help', (ctx: any) => {
 });
 
 bot.command('webapp', (ctx: any) => {
-  const chatId = ctx.chat.id;
-  // Encode le chatId en base64
-  const encodedGroupId = Buffer.from(chatId.toString()).toString('base64');
-  
-  console.log('Chat ID:', chatId);
-  console.log('Encoded Group ID:', encodedGroupId);
-  
-  ctx.reply('Open Web App', {
-    reply_markup: {
-      inline_keyboard: [[
-        { text: "Open App", url: `${WEBAPP_URL}?startapp=${encodedGroupId}` }
-      ]]
-    }
-  });
+  sendWebAppButton(ctx, 'Here you go 👇');
 });
 
 bot.launch().then(() => {
