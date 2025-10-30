@@ -3,7 +3,8 @@
     "allow": [
       "Bash(tasklist:*)",
       "Bash(findstr:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(dir /b:*)"
     ],
     "deny": [],
     "ask": []
