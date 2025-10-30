@@ -8,24 +8,31 @@ if (!BOT_TOKEN) {
 const bot = new Telegraf(BOT_TOKEN, { telegram: { testEnv: true } });
 
 // Basic commands
-function sendWebAppButton(ctx: any, message = 'Open the Mini App to get started!') {
+async function sendWebAppButton(ctx: any, message = 'Open the Mini App to get started!') {
   const chatId = ctx.chat.id;
   const encodedGroupId = Buffer.from(chatId.toString()).toString('base64');
-
+  const url = `${WEBAPP_URL}?startapp=${encodedGroupId}`;
+  
   console.log('Chat ID:', chatId);
   console.log('Encoded Group ID:', encodedGroupId);
 
-  return ctx.reply(message, {
+  await ctx.telegram.setChatMenuButton(chatId, {
+    type: 'web_app',
+    text: 'Open',
+    web_app: { url }
+  });
+
+  await ctx.reply(message, {
     reply_markup: {
       inline_keyboard: [[
-        { text: 'Open', web_app: { url: `${WEBAPP_URL}?startapp=${encodedGroupId}` } }
+        { text: 'Open', web_app: { url } }
       ]]
     }
   });
 }
 
-bot.command('start', (ctx: any) => {
-  sendWebAppButton(ctx, 'Welcome to TaskVaultBot! 🚀\nTap the button below to launch the Mini App.');
+bot.command('start', async (ctx: any) => {
+  await sendWebAppButton(ctx, 'Welcome to TaskVaultBot! 🚀\nTap the button below to launch the Mini App.');
 });
 
 bot.command('help', (ctx: any) => {
@@ -37,8 +44,8 @@ bot.command('help', (ctx: any) => {
   );
 });
 
-bot.command('webapp', (ctx: any) => {
-  sendWebAppButton(ctx, 'Here you go 👇');
+bot.command('webapp', async (ctx: any) => {
+  await sendWebAppButton(ctx, 'Here you go 👇');
 });
 
 bot.launch().then(() => {
