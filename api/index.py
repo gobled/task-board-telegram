@@ -11,6 +11,7 @@ import logging
 TOKEN = os.environ.get("BOT_TOKEN")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 WEBAPP_URL = os.environ.get("WEBAPP_URL")
+DIRECT_LINK = os.environ.get("DIRECT_LINK")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -49,8 +50,39 @@ async def startup_event():
 # Define the /start command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    await context.bot.send_message(chat_id=chat_id, text="Hello, welcome to the bot!")
-    print(f"Handled /start for chat_id: {chat_id}")
+    print(f"Handling /start for chat_id: {chat_id}")
+
+    try:
+        # Encode the chat_id in base64
+        encoded_group_id = base64.b64encode(str(chat_id).encode()).decode()
+        webapp_url = f"{WEBAPP_URL}?startapp={encoded_group_id}"
+
+        # Create inline keyboard with Web App button and Direct Link button
+        inline_keyboard = []
+
+        # Add Web App button
+        inline_keyboard.append({
+            "text": "Open",
+            "web_app": {"url": webapp_url}
+        })
+
+        # Add Direct Link button if configured
+        if DIRECT_LINK:
+            inline_keyboard.append({
+                "text": "Open",
+                "url": DIRECT_LINK
+            })
+
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="Welcome to TaskVaultBot! 🚀\nTap the button below to launch the Mini App.",
+            reply_markup={
+                "inline_keyboard": [inline_keyboard]
+            }
+        )
+        print(f"Handled /start for chat_id: {chat_id}")
+    except Exception as e:
+        print(f"Error handling /start for chat_id {chat_id}: {e}")
 
 # Define the /webapp command handler
 async def webapp(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -59,19 +91,30 @@ async def webapp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Encode the chat_id in base64
         encoded_group_id = base64.b64encode(str(chat_id).encode()).decode()
+        webapp_url = f"{WEBAPP_URL}?startapp={encoded_group_id}"
+
+        # Create inline keyboard with Web App button and Direct Link button
+        inline_keyboard = []
+
+        # Add Web App button
+        inline_keyboard.append({
+            "text": "Open",
+            "web_app": {"url": webapp_url}
+        })
+
+        # Add Direct Link button if configured
+        if DIRECT_LINK:
+            inline_keyboard.append({
+                "text": "Open",
+                "url": DIRECT_LINK
+            })
+
         await context.bot.send_message(
             chat_id=chat_id,
-            text="Open Web App",
+            text="Here you go 👇",
             reply_markup={
-                "inline_keyboard": [
-                    [
-                        {
-                            "text": "Open App",
-                            "url": f"{WEBAPP_URL}?startapp={encoded_group_id}",
-                        }
-                    ]
-                ]
-            },
+                "inline_keyboard": [inline_keyboard]
+            }
         )
     except Exception as e:
         print(f"Error handling /webapp for chat_id {chat_id}: {e}")
