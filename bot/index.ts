@@ -1,34 +1,46 @@
-const { Telegraf } = require('telegraf');
+const { Telegraf, Markup } = require('telegraf');
 const { BOT_TOKEN, WEBAPP_URL } = require('./config');
 
 if (!BOT_TOKEN) {
   throw new Error('BOT_TOKEN must be provided!');
 }
 
-const bot = new Telegraf(BOT_TOKEN, { telegram: { testEnv: true } });
+const bot = new Telegraf(BOT_TOKEN);
 
 // Basic commands
 async function sendWebAppButton(ctx: any, message = 'Open the Mini App to get started!') {
   const chatId = ctx.chat.id;
-  const encodedGroupId = Buffer.from(chatId.toString()).toString('base64');
-  const url = `${WEBAPP_URL}?startapp=${encodedGroupId}`;
-  
+  const encodedChatId = Buffer.from(chatId.toString()).toString('base64');
+  const url = `${WEBAPP_URL}?startapp=${encodedChatId}`;
+
   console.log('Chat ID:', chatId);
-  console.log('Encoded Group ID:', encodedGroupId);
+  console.log('Encoded Group ID:', encodedChatId);
 
-  await ctx.telegram.setChatMenuButton(chatId, {
-    type: 'web_app',
-    text: 'Open',
-    web_app: { url }
-  });
+  try {
+    await ctx.telegram.setChatMenuButton({
+      type: 'web_app',
+      text: 'Open App',
+      web_app: { url },
+    });
+  } catch (error) {
+    console.warn('Unable to set default menu button:', error);
+  }
 
-  await ctx.reply(message, {
-    reply_markup: {
-      inline_keyboard: [[
-        { text: 'Open', web_app: { url } }
-      ]]
-    }
-  });
+  try {
+    await ctx.telegram.setChatMenuButton(chatId, {
+      type: 'web_app',
+      text: 'Open App',
+      web_app: { url },
+    });
+  } catch (error) {
+    console.warn('Unable to set chat-specific menu button:', error);
+  }
+
+  const keyboard = Markup.inlineKeyboard([
+    Markup.button.webApp('Open', url),
+  ]);
+
+  await ctx.reply(message, keyboard);
 }
 
 bot.command('start', async (ctx: any) => {
