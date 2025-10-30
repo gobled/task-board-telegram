@@ -25,6 +25,15 @@ export default function HomePage() {
 
     tg.ready();
     tg.expand();
+
+    // Request fullscreen mode
+    if (tg.requestFullscreen) {
+      tg.requestFullscreen();
+    }
+
+    // Enable close confirmation (optional)
+    tg.enableClosingConfirmation();
+
     setWebApp(tg);
   }, []);
 
