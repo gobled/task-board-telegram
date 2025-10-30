@@ -1,7 +1,7 @@
 import base64
 from contextlib import asynccontextmanager
 from http import HTTPStatus
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler
 from telegram.ext._contexttypes import ContextTypes
 from fastapi import FastAPI, Request, Response
@@ -11,7 +11,6 @@ import logging
 TOKEN = os.environ.get("BOT_TOKEN")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 WEBAPP_URL = os.environ.get("WEBAPP_URL")
-DIRECT_LINK = os.environ.get("DIRECT_LINK")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -50,43 +49,8 @@ async def startup_event():
 # Define the /start command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    print(f"Handling /start for chat_id: {chat_id}")
-
-    try:
-        # Encode the chat_id in base64
-        encoded_group_id = base64.b64encode(str(chat_id).encode()).decode()
-        webapp_url = f"{WEBAPP_URL}?startapp={encoded_group_id}"
-
-        # Create inline keyboard with Web App button and Direct Link button
-        buttons = []
-
-        # Add Web App button
-        buttons.append(
-            InlineKeyboardButton(
-                text="Open",
-                web_app=WebAppInfo(url=webapp_url)
-            )
-        )
-
-        # Add Direct Link button if configured
-        if DIRECT_LINK:
-            buttons.append(
-                InlineKeyboardButton(
-                    text="Open",
-                    url=DIRECT_LINK
-                )
-            )
-
-        keyboard = InlineKeyboardMarkup([buttons])
-
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="Welcome to TaskVaultBot! 🚀\nTap the button below to launch the Mini App.",
-            reply_markup=keyboard
-        )
-        print(f"Handled /start for chat_id: {chat_id}")
-    except Exception as e:
-        print(f"Error handling /start for chat_id {chat_id}: {e}")
+    await context.bot.send_message(chat_id=chat_id, text="Hello, welcome to the bot!")
+    print(f"Handled /start for chat_id: {chat_id}")
 
 # Define the /webapp command handler
 async def webapp(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -95,34 +59,19 @@ async def webapp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Encode the chat_id in base64
         encoded_group_id = base64.b64encode(str(chat_id).encode()).decode()
-        webapp_url = f"{WEBAPP_URL}?startapp={encoded_group_id}"
-
-        # Create inline keyboard with Web App button and Direct Link button
-        buttons = []
-
-        # Add Web App button
-        buttons.append(
-            InlineKeyboardButton(
-                text="Open",
-                web_app=WebAppInfo(url=webapp_url)
-            )
-        )
-
-        # Add Direct Link button if configured
-        if DIRECT_LINK:
-            buttons.append(
-                InlineKeyboardButton(
-                    text="Open",
-                    url=DIRECT_LINK
-                )
-            )
-
-        keyboard = InlineKeyboardMarkup([buttons])
-
         await context.bot.send_message(
             chat_id=chat_id,
-            text="Here you go 👇",
-            reply_markup=keyboard
+            text="Open Web App",
+            reply_markup={
+                "inline_keyboard": [
+                    [
+                        {
+                            "text": "Open App",
+                            "url": f"{WEBAPP_URL}?startapp={encoded_group_id}",
+                        }
+                    ]
+                ]
+            },
         )
     except Exception as e:
         print(f"Error handling /webapp for chat_id {chat_id}: {e}")
