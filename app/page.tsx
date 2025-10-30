@@ -121,7 +121,7 @@ function TaskBoard() {
           height={20}
           priority
         />
-        <h1 className="text-2xl font-bold">Task Board - Group {groupId}</h1>
+        <h1 className="text-2xl font-bold">TB - Group {groupId}</h1>
       </header>
 
       <main className="flex flex-col gap-8">
