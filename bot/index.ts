@@ -5,7 +5,7 @@ if (!BOT_TOKEN) {
   throw new Error('BOT_TOKEN must be provided!');
 }
 
-const bot = new Telegraf(BOT_TOKEN);
+const bot = new Telegraf(BOT_TOKEN, { telegram: { testEnv: true } });
 
 // Basic commands
 bot.command('start', (ctx: any) => {

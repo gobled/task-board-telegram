@@ -1,35 +1,27 @@
 "use client";
 
 import { useState } from 'react';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/app/lib/firebase';
 
 interface TaskFormProps {
-  groupId: string;
+  onAddTask: (title: string) => void;
 }
 
-export default function TaskForm({ groupId }: TaskFormProps) {
+export default function TaskForm({ onAddTask }: TaskFormProps) {
   const [title, setTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !db) return;
+    const trimmedTitle = title.trim();
 
-    try {
-      await addDoc(collection(db, 'tasks'), {
-        title: title.trim(),
-        completed: false,
-        createdAt: new Date(),
-        groupId,
-      });
-
-      setTitle('');
-      setError(null);
-    } catch (err) {
-      console.error('Error adding task:', err);
-      setError('Failed to add task');
+    if (!trimmedTitle) {
+      setError('Task title cannot be empty');
+      return;
     }
+
+    onAddTask(trimmedTitle);
+    setTitle('');
+    setError(null);
   };
 
   return (
@@ -47,6 +39,7 @@ export default function TaskForm({ groupId }: TaskFormProps) {
       >
         Add Task
       </button>
+      {error && <p className="text-sm text-red-500">{error}</p>}
     </form>
   );
 }
