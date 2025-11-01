@@ -98,12 +98,19 @@ For a more stable development experience, consider:
 - [localhost.run](https://localhost.run/) (free, but URLs change)
 - [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (free, fixed URLs)
 
+## Telegram Bot Capabilities
+
+- Handles `/start` to greet the user and surface inline buttons for opening the mini app or reviewing plans. The deep link encodes the chat id so the mini app can receive `startapp` parameters.
+- Provides `/payments` to show an inline plan catalog and exposes dedicated commands for each premium tier (`/buy_sticker`, `/buy_basic`, `/buy_premium`, `/buy_enterprise`) plus `/demo_payment` for sandbox testing.
+- Sends Telegram Stars invoices directly from the webhook via `ctx.replyWithInvoice`, validating payloads during the `pre_checkout_query` lifecycle step before allowing checkout.
+- Confirms successful payments with contextual receipts, handles refund notifications, and keeps users in test mode by running the bot against `BOT_TOKEN/test`.
+- Responds to the `View Plans` callback button with the current premium status message and keeps a healthy-checkable webhook at `GET /api/webhook`.
+
 ### Project Structure
 
 - `/app` - Next.js app directory (Mini App frontend)
-- `/bot` - Telegram bot implementation using Telegraf
-- `/bot/config.ts` - Bot configuration and environment variables
-- `/bot/index.ts` - Bot commands and Web App button logic
+- `app/api/webhook/route.ts` - Telegram webhook entry point and bot command handlers
+- `app/api/payments/shared.ts` - Shared payment utilities, plan catalog, and Telegraf singleton
 
 ### Available Commands
 
@@ -121,8 +128,13 @@ For a more stable development experience, consider:
 ### Bot Commands
 
 - `/start` - Initialize the bot and display the Mini App button
-- `/help` - Show available commands
 - `/webapp` - Open the Mini App
+- `/payments` - List premium plans and features
+- `/demo_payment` - Trigger a 1-Star demo invoice
+- `/buy_sticker` - Purchase the Task Board sticker pack
+- `/buy_basic` - Purchase the Basic plan
+- `/buy_premium` - Purchase the Premium plan
+- `/buy_enterprise` - Purchase the Enterprise plan
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
