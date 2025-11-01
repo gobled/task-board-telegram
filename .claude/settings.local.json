@@ -22,7 +22,9 @@
       "Bash(mkdir:*)",
       "Bash(python -m json.tool:*)",
       "Bash(timeout /t 3)",
-      "Bash(rd /s /q .next)"
+      "Bash(rd /s /q .next)",
+      "Bash(npm run build:*)",
+      "Bash(npm i:*)"
     ],
     "deny": [],
     "ask": []

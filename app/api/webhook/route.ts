@@ -1,10 +1,13 @@
 import { Markup, Telegraf } from 'telegraf';
-import type { Context, Update } from 'telegraf';
+import type { Context } from 'telegraf';
+import type { Update } from 'telegraf/types';
 
 export type BotContext = Context<Update>;
-export const BOT_TOKEN = process.env.BOT_TOKEN ?? '';
-export const WEBAPP_URL = process.env.WEBAPP_URL ?? 'http://localhost:3000';
-export const PROVIDER_TOKEN = process.env.PAYMENT_PROVIDER_TOKEN;
+
+// Local constants - not exported to comply with Next.js API route requirements
+const BOT_TOKEN = process.env.BOT_TOKEN ?? '';
+const WEBAPP_URL = process.env.WEBAPP_URL ?? 'http://localhost:3000';
+const PROVIDER_TOKEN = process.env.PAYMENT_PROVIDER_TOKEN;
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -374,9 +374,7 @@ export default function FruitNinja({
       })
       .then(() => {
         if (destroyed || !containerRef.current || !app.canvas) {
-          if (!app.destroyed) {
-            app.destroy(true, { children: true });
-          }
+          app.destroy(true, { children: true });
           return;
         }
 
@@ -714,7 +712,7 @@ export default function FruitNinja({
       const currentApp = appRef.current;
       appRef.current = null;
 
-      if (currentApp && !currentApp.destroyed) {
+      if (currentApp) {
         currentApp.destroy(true, { children: true });
       }
     };
