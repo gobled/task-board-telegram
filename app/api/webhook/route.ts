@@ -26,9 +26,9 @@ function registerHandlers(bot: Telegraf<BotContext>) {
     const webAppUrl = encodedChatId ? `${WEBAPP_URL}?startapp=${encodedChatId}` : WEBAPP_URL;
 
     await ctx.reply(
-      'Welcome to Task Board. Use the buttons below to open the mini app',
+      'Welcome to another fantastic fruit slicer bot! 🍉🍓🍍.',
       Markup.inlineKeyboard([
-        [Markup.button.url('Open Task Board', webAppUrl)]
+        [Markup.button.url('play now', webAppUrl)]
       ]),
     );
   });
