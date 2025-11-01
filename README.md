@@ -15,7 +15,6 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ```env
 BOT_TOKEN=your_bot_token_here
 WEBAPP_URL=https://your-ngrok-url.ngrok.io
-DIRECT_LINK=https://your-ngrok-url.ngrok.io
 ```
 
 2. Install dependencies:
@@ -64,7 +63,6 @@ ngrok http 3000
 
 ```env
 WEBAPP_URL=https://abc123.ngrok.io
-DIRECT_LINK=https://abc123.ngrok.io
 ```
 
 #### Step 3: Start the Telegram Bot
