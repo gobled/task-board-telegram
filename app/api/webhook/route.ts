@@ -50,7 +50,7 @@ const globalState = globalThis as typeof globalThis & {
 
 function getBotInstance(onFirstCreate?: (bot: Telegraf<BotContext>) => void) {
   if (!globalState.taskBoardBot) {
-    const bot = new Telegraf<BotContext>(`${BOT_TOKEN}/test`);
+    const bot = new Telegraf<BotContext>(BOT_TOKEN);
     if (onFirstCreate) {
       onFirstCreate(bot);
     }
