@@ -10,12 +10,26 @@ export default function HomePage() {
   const [webApp, setWebApp] = useState<WebApp | null>(null);
   const [launchParams, setLaunchParams] = useState<LaunchParams | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [highScore, setHighScore] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
     try {
       setLaunchParams(retrieveLaunchParams());
     } catch (error) {
       console.warn("Unable to retrieve launch params outside Telegram.", error);
+    }
+
+    // Load high score from localStorage
+    const savedHighScore = localStorage.getItem("fruitNinjaHighScore");
+    if (savedHighScore) {
+      setHighScore(parseInt(savedHighScore, 10));
+    }
+
+    // Load mute preference from localStorage
+    const savedMutePreference = localStorage.getItem("fruitNinjaMuted");
+    if (savedMutePreference) {
+      setIsMuted(savedMutePreference === "true");
     }
   }, []);
 
@@ -89,6 +103,15 @@ export default function HomePage() {
 
   const username = user?.username ? `@${user.username}` : null;
 
+  const toggleMute = () => {
+    const newMuteState = !isMuted;
+    setIsMuted(newMuteState);
+    localStorage.setItem("fruitNinjaMuted", newMuteState.toString());
+    if (webApp) {
+      webApp.HapticFeedback?.impactOccurred("soft");
+    }
+  };
+
   const handlePlay = () => {
     if (webApp) {
       webApp.expand();
@@ -161,22 +184,38 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-950 to-black px-6 py-12 text-slate-100" style={{ overflowY: 'auto', overscrollBehavior: 'none' }}>
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/10 p-10 text-center backdrop-blur" style={{ touchAction: 'pan-y' }}>
-        <h1 className="text-3xl font-semibold tracking-tight">Welcome, {fullName}</h1>
-        {username && (
-          <p className="mt-2 text-sm text-slate-300">
-            {username}
-          </p>
+        <h1 className="text-5xl font-bold text-white mb-2">Pika Splash</h1>
+        <p className="text-slate-400 mb-8">Slice the fruits, avoid the bombs!</p>
+
+        {/* High Score Display */}
+        {highScore > 0 && (
+          <div className="mb-8 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-4">
+            <p className="text-xs text-emerald-400">High Score</p>
+            <p className="text-3xl font-bold text-emerald-400">{highScore}</p>
+          </div>
         )}
-        {user?.id && (
-          <p className="mt-1 text-xs text-slate-400">
-            ID: {user.id}
-          </p>
-        )}
+
+        {/* Mute Button */}
+        <div className="mb-8 flex justify-center gap-4">
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="rounded-lg bg-black/50 px-6 py-3 backdrop-blur transition hover:bg-black/70 border border-white/10"
+            aria-label={isMuted ? "Unmute sound" : "Mute sound"}
+          >
+            <span className="text-2xl">
+              {isMuted ? "🔇" : "🔊"}
+            </span>
+            <p className="text-xs text-slate-300 mt-1">
+              {isMuted ? "Muted" : "Sound On"}
+            </p>
+          </button>
+        </div>
 
         <button
           type="button"
           onClick={handlePlay}
-          className="mt-10 inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-lg font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+          className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-lg font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
         >
           Play
         </button>
