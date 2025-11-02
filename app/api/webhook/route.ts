@@ -8,6 +8,7 @@ export type BotContext = Context<Update>;
 const BOT_TOKEN = process.env.BOT_TOKEN ?? '';
 const WEBAPP_URL = process.env.WEBAPP_URL ?? 'http://localhost:3000';
 const PROVIDER_TOKEN = process.env.PAYMENT_PROVIDER_TOKEN;
+const TEST_MODE = process.env.TEST_MODE === 'true';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,7 +51,10 @@ const globalState = globalThis as typeof globalThis & {
 
 function getBotInstance(onFirstCreate?: (bot: Telegraf<BotContext>) => void) {
   if (!globalState.taskBoardBot) {
-    const bot = new Telegraf<BotContext>(BOT_TOKEN);
+    // Append /test to token when in test mode for Telegram Stars test payments
+    const botToken = TEST_MODE ? `${BOT_TOKEN}/test` : BOT_TOKEN;
+    console.log(`Initializing Telegram bot in ${TEST_MODE ? 'TEST' : 'PRODUCTION'} mode`);
+    const bot = new Telegraf<BotContext>(botToken);
     if (onFirstCreate) {
       onFirstCreate(bot);
     }

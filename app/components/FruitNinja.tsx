@@ -44,6 +44,9 @@ export default function FruitNinja({
   const [gameOver, setGameOver] = useState(false);
   const [highScore, setHighScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
+  const [isMuted, setIsMuted] = useState(false);
+  const [gameStarted, setGameStarted] = useState(true); // Auto-start game
+  const [lastScore, setLastScore] = useState(0);
 
   const appRef = useRef<PIXI.Application | null>(null);
   const fruitsRef = useRef<Fruit[]>([]);
@@ -58,6 +61,8 @@ export default function FruitNinja({
   const gameOverRef = useRef(gameOver);
   const livesRef = useRef(lives);
   const onGameOverRef = useRef(onGameOver);
+  const gameStartedRef = useRef(true); // Initialize as true to match auto-start
+  const isMutedRef = useRef(isMuted);
 
   // Sound effects using Howler.js
   const soundsRef = useRef<{
@@ -93,6 +98,14 @@ export default function FruitNinja({
     const savedHighScore = localStorage.getItem("fruitNinjaHighScore");
     if (savedHighScore) {
       setHighScore(parseInt(savedHighScore, 10));
+    }
+
+    // Load mute preference
+    const savedMutePreference = localStorage.getItem("fruitNinjaMuted");
+    if (savedMutePreference) {
+      const muteValue = savedMutePreference === "true";
+      setIsMuted(muteValue);
+      isMutedRef.current = muteValue; // Initialize ref with saved value
     }
 
     // Initialize sound effects with Howler.js
@@ -149,8 +162,17 @@ export default function FruitNinja({
     onGameOverRef.current = onGameOver;
   }, [onGameOver]);
 
+  useEffect(() => {
+    gameStartedRef.current = gameStarted;
+  }, [gameStarted]);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+
   // Play sound effect using Howler
   const playSound = (sound: 'splatter' | 'boom' | 'over' | 'start') => {
+    if (isMutedRef.current) return; // Don't play if muted
     try {
       const howl = soundsRef.current[sound];
       if (howl) {
@@ -161,15 +183,11 @@ export default function FruitNinja({
     }
   };
 
-  // Play start sound on mount
-  useEffect(() => {
-    const timer = setTimeout(() => playSound('start'), 200);
-    return () => clearTimeout(timer);
-  }, []);
+  // Don't play start sound on auto-start (it will play when user manually restarts)
 
   // Timer countdown
   useEffect(() => {
-    if (gameOver) return;
+    if (gameOver || !gameStarted) return;
 
     const timerId = setInterval(() => {
       setTimeLeft((prev) => {
@@ -178,8 +196,11 @@ export default function FruitNinja({
         }
 
         if (prev <= 1) {
+          setLastScore(scoreRef.current);
           setGameOver(true);
           gameOverRef.current = true;
+          setGameStarted(false);
+          gameStartedRef.current = false;
           playSound('over');
           if (scoreRef.current > highScoreRef.current) {
             setHighScore(scoreRef.current);
@@ -198,7 +219,7 @@ export default function FruitNinja({
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [gameOver]);
+  }, [gameOver, gameStarted]);
 
   // Create fruit sprite
   const createFruitSprite = (fruit: Fruit): PIXI.Graphics => {
@@ -505,22 +526,24 @@ export default function FruitNinja({
           gridGraphics.lineTo(app.screen.width, i);
         }
 
-        // Spawn new fruits
-        const now = Date.now();
-        const timeElapsed = 60 - timeLeftRef.current;
+        // Only spawn new fruits if game has started
+        if (gameStartedRef.current) {
+          const now = Date.now();
+          const timeElapsed = 60 - timeLeftRef.current;
 
-        let spawnInterval = 1200;
-        if (timeElapsed > 45) {
-          spawnInterval = 600;
-        } else if (timeElapsed > 30) {
-          spawnInterval = 800;
-        } else if (timeElapsed > 15) {
-          spawnInterval = 1000;
-        }
+          let spawnInterval = 1200;
+          if (timeElapsed > 45) {
+            spawnInterval = 600;
+          } else if (timeElapsed > 30) {
+            spawnInterval = 800;
+          } else if (timeElapsed > 15) {
+            spawnInterval = 1000;
+          }
 
-        if (now - lastSpawnTimeRef.current > spawnInterval) {
-          spawnFruit();
-          lastSpawnTimeRef.current = now;
+          if (now - lastSpawnTimeRef.current > spawnInterval) {
+            spawnFruit();
+            lastSpawnTimeRef.current = now;
+          }
         }
 
         // Update and render fruits
@@ -564,8 +587,11 @@ export default function FruitNinja({
                 setLives((prev) => {
                   const newLives = Math.max(prev - 1, 0);
                   if (newLives <= 0) {
+                    setLastScore(scoreRef.current);
                     setGameOver(true);
                     gameOverRef.current = true;
+                    setGameStarted(false);
+                    gameStartedRef.current = false;
                     playSound('over');
                     if (scoreRef.current > highScoreRef.current) {
                       setHighScore(scoreRef.current);
@@ -625,26 +651,43 @@ export default function FruitNinja({
           }
         }
 
-        // Draw slice trail
-        if (sliceGraphicsRef.current) {
+        // Draw slice trail using filled circles (guaranteed to work)
+        if (sliceGraphicsRef.current && sliceTrailRef.current.length > 0) {
           sliceGraphicsRef.current.clear();
 
-          if (sliceTrailRef.current.length > 0) {
-            sliceGraphicsRef.current.lineStyle(3, 0xFFFFFF, 1);
-            sliceGraphicsRef.current.moveTo(sliceTrailRef.current[0].x, sliceTrailRef.current[0].y);
+          // Bring trail to front so it's always visible
+          app.stage.setChildIndex(sliceGraphicsRef.current, app.stage.children.length - 1);
 
-            for (let i = 1; i < sliceTrailRef.current.length; i++) {
-              const point = sliceTrailRef.current[i];
-              const opacity = Math.max(0, 1 - (currentTime - point.time) / 200);
-              sliceGraphicsRef.current.lineStyle(3, 0xFFFFFF, opacity);
-              sliceGraphicsRef.current.lineTo(point.x, point.y);
+          // Draw trail as connected circles
+          for (let i = 0; i < sliceTrailRef.current.length; i++) {
+            const point = sliceTrailRef.current[i];
+            const age = currentTime - point.time;
+            const maxAge = 300;
+
+            if (age < maxAge) {
+              const opacity = 1 - (age / maxAge);
+
+              // Outer glow (yellow)
+              sliceGraphicsRef.current.beginFill(0xFFFF00, opacity * 0.4);
+              sliceGraphicsRef.current.drawCircle(point.x, point.y, 12);
+              sliceGraphicsRef.current.endFill();
+
+              // Middle glow (cyan)
+              sliceGraphicsRef.current.beginFill(0x00FFFF, opacity * 0.7);
+              sliceGraphicsRef.current.drawCircle(point.x, point.y, 8);
+              sliceGraphicsRef.current.endFill();
+
+              // Core (white)
+              sliceGraphicsRef.current.beginFill(0xFFFFFF, opacity);
+              sliceGraphicsRef.current.drawCircle(point.x, point.y, 4);
+              sliceGraphicsRef.current.endFill();
             }
-
-            // Remove old trail points
-            sliceTrailRef.current = sliceTrailRef.current.filter(
-              (point) => currentTime - point.time < 200
-            );
           }
+
+          // Remove old trail points
+          sliceTrailRef.current = sliceTrailRef.current.filter(
+            (point) => currentTime - point.time < 300
+          );
         }
       };
 
@@ -670,7 +713,7 @@ export default function FruitNinja({
 
       if (isSlicingRef.current) {
         sliceTrailRef.current.push({ x, y, time: Date.now() });
-        if (sliceTrailRef.current.length > 20) {
+        if (sliceTrailRef.current.length > 30) {
           sliceTrailRef.current.shift();
         }
       }
@@ -718,16 +761,28 @@ export default function FruitNinja({
     };
   }, []);
 
-  const handleRestart = () => {
+  const toggleMute = () => {
+    const newMuteState = !isMuted;
+    setIsMuted(newMuteState);
+    isMutedRef.current = newMuteState; // Update ref immediately
+    localStorage.setItem("fruitNinjaMuted", newMuteState.toString());
+  };
+
+  const handleStartOrRestart = () => {
+    // Play start sound when manually restarting
+    playSound('start');
+
     scoreRef.current = 0;
     livesRef.current = 3;
     gameOverRef.current = false;
     timeLeftRef.current = 60;
+    gameStartedRef.current = true;
 
     setScore(0);
     setLives(3);
     setGameOver(false);
     setTimeLeft(60);
+    setGameStarted(true);
 
     const app = appRef.current;
     if (app) {
@@ -749,71 +804,97 @@ export default function FruitNinja({
 
     fruitsRef.current = [];
     sliceTrailRef.current = [];
-    lastSpawnTimeRef.current = Date.now();
     sliceGraphicsRef.current?.clear();
-
-    setTimeout(() => playSound('start'), 100);
+    lastSpawnTimeRef.current = Date.now();
   };
 
   return (
     <div className="relative h-screen w-screen overflow-hidden" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
       <div ref={containerRef} className="absolute inset-0" style={{ touchAction: 'none' }} />
 
-      {/* HUD */}
-      <div className="pointer-events-none absolute inset-0 px-4" style={{ paddingTop: '30px' }}>
-        <div className="flex items-end justify-between">
-          {/* Lives - Left Corner */}
-          <div className="flex gap-1 pb-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-3 w-5 rounded-full ${
-                  i < lives ? "bg-red-500" : "bg-gray-600"
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Score - Center */}
-          <div className="rounded-xl bg-black/50 px-6 py-2 backdrop-blur">
-            <p className="text-xs text-center text-slate-300">Score</p>
-            <p className="text-2xl font-bold text-center text-white">{score}</p>
-          </div>
-
-          {/* Time Remaining - Right Corner */}
-          <div className="rounded-lg bg-black/50 px-4 py-1 backdrop-blur">
-            <p className="text-sm font-bold text-center text-white">{timeLeft}s</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Game Over Screen */}
-      {gameOver && (
+      {/* Welcome Screen - Shows before game starts and after game over */}
+      {!gameStarted && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-10 text-center">
-            <h2 className="text-4xl font-bold text-red-500">Time's Up!</h2>
+            <h1 className="text-5xl font-bold text-white mb-2">Pika Splash</h1>
+            <p className="text-slate-400 mb-8">Slice the fruits, avoid the bombs!</p>
 
-            <div className="mt-6">
-              <p className="text-6xl font-bold text-white">{score}</p>
-              <p className="mt-2 text-sm text-slate-400">Your Score</p>
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-4">
-              <p className="text-xs text-emerald-400">High Score</p>
-              <p className="text-3xl font-bold text-emerald-400">{highScore}</p>
-            </div>
-
-            {score === highScore && score > 0 && (
-              <p className="mt-4 text-lg font-semibold text-emerald-400">🎉 New High Score!</p>
+            {/* Show last score if game just ended */}
+            {gameOver && lastScore > 0 && (
+              <div className="mb-6">
+                <p className="text-5xl font-bold text-white">{lastScore}</p>
+                <p className="mt-2 text-sm text-slate-400">Your Score</p>
+              </div>
             )}
 
+            {/* Show high score */}
+            {highScore > 0 && (
+              <div className="mb-8 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-4">
+                <p className="text-xs text-emerald-400">High Score</p>
+                <p className="text-3xl font-bold text-emerald-400">{highScore}</p>
+              </div>
+            )}
+
+            {/* New high score message */}
+            {gameOver && lastScore === highScore && lastScore > 0 && (
+              <p className="mb-6 text-lg font-semibold text-emerald-400">🎉 New High Score!</p>
+            )}
+
+            {/* Mute button */}
+            <div className="mb-8 flex justify-center gap-4">
+              <button
+                type="button"
+                onClick={toggleMute}
+                className="rounded-lg bg-black/50 px-6 py-3 backdrop-blur transition hover:bg-black/70 border border-white/10"
+                aria-label={isMuted ? "Unmute sound" : "Mute sound"}
+              >
+                <span className="text-2xl">
+                  {isMuted ? "🔇" : "🔊"}
+                </span>
+                <p className="text-xs text-slate-300 mt-1">
+                  {isMuted ? "Muted" : "Sound On"}
+                </p>
+              </button>
+            </div>
+
+            {/* Start/Restart button */}
             <button
               type="button"
-              onClick={handleRestart}
-              className="mt-8 inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-lg font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+              onClick={handleStartOrRestart}
+              className="w-full inline-flex items-center justify-center rounded-full bg-emerald-500 px-8 py-4 text-xl font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
             >
-              Play Again
+              {gameOver ? "Play Again" : "Start Game"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* HUD - Only show when game is started */}
+      {gameStarted && !gameOver && (
+        <div className="pointer-events-none absolute inset-0 px-4" style={{ paddingTop: '30px' }}>
+          <div className="flex items-end justify-between">
+            {/* Lives - Left Corner */}
+            <div className="flex gap-1 pb-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-3 w-5 rounded-full ${
+                    i < lives ? "bg-red-500" : "bg-gray-600"
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Score - Center */}
+            <div className="rounded-xl bg-black/50 px-6 py-2 backdrop-blur">
+              <p className="text-xs text-center text-slate-300">Score</p>
+              <p className="text-2xl font-bold text-center text-white">{score}</p>
+            </div>
+
+            {/* Time Remaining - Right Corner */}
+            <div className="rounded-lg bg-black/50 px-4 py-1 backdrop-blur">
+              <p className="text-sm font-bold text-center text-white">{timeLeft}s</p>
+            </div>
           </div>
         </div>
       )}

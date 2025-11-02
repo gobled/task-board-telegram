@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Telegram Mini App built with Next.js 15 that integrates with Telegram bots. The app includes a game component (Fruit Ninja) and Telegram Stars payment integration for in-app purchases.
+This is a Telegram Mini App built with Next.js 15 that integrates with Telegram bots. The app includes a game component (Pika Splash) and Telegram Stars payment integration for in-app purchases.
 
 ## Development Setup
 
@@ -18,8 +18,14 @@ Create `.env.local` with:
 ```
 BOT_TOKEN=your_bot_token_here
 WEBAPP_URL=https://your-ngrok-url.ngrok.io
+TEST_MODE=true
 PAYMENT_PROVIDER_TOKEN=optional_for_payments
 ```
+
+**Important:**
+- `TEST_MODE=true` enables Telegram test environment by appending `/test` to bot token (for test payments)
+- `TEST_MODE=false` uses production environment
+- See `.env.example` for reference
 
 ### Running the App
 
@@ -62,11 +68,9 @@ This app operates in two distinct runtime environments:
 
 The bot operates entirely through Next.js API routes, not as a separate process:
 
-- **Webhook Handler** (`app/api/webhook/route.ts`): Receives Telegram updates, processes commands (`/start`, `/webapp`, `/payments`), handles payment flows (pre-checkout, successful_payment, refunded_payment)
-- **Shared Bot Logic** (`app/api/payments/shared.ts`): Singleton bot instance using `getBotInstance()`, payment plans configuration, bot token appended with `/test` for Telegram Stars test mode
-- **Invoice Creation** (`app/api/payments/invoice/route.ts`): Generates payment invoice links for in-app purchases
+- **Webhook Handler** (`app/api/webhook/route.ts`): Receives Telegram updates, processes commands (`/start`, `/webapp`), singleton bot instance using `getBotInstance()`
 
-**Critical:** The bot token uses `/test` suffix (`new Telegraf(BOT_TOKEN + '/test')`) to enable Telegram Stars test mode. This affects all payment operations.
+**Test Mode:** When `TEST_MODE=true` environment variable is set, the bot token automatically gets `/test` suffix appended (`BOT_TOKEN + '/test'`) to enable Telegram test environment. This is useful for testing Telegram Stars payments without real transactions.
 
 ### Mini App Frontend
 
@@ -74,17 +78,6 @@ The bot operates entirely through Next.js API routes, not as a separate process:
 - **Telegram SDK**: Uses `@telegram-apps/sdk-react` for launch params and native `telegram-web-app` script loaded in layout
 - **WebApp Script**: Loaded via `<script src="https://telegram.org/js/telegram-web-app.js">` in `app/layout.tsx`
 - **Haptic Feedback**: Integrated throughout UI for native app feel
-
-### Payment Flow
-
-1. User taps "Buy Sticker Pack" in Mini App
-2. Frontend calls `POST /api/payments/invoice` with `planId` and `userId`
-3. API creates invoice link via Telegram Bot API
-4. Frontend opens invoice using `webApp.openInvoice(invoiceUrl, callback)`
-5. Telegram processes payment (test mode via `/test` suffix)
-6. Webhook receives `pre_checkout_query` → validates → answers
-7. Webhook receives `successful_payment` → confirms in chat
-8. Refunds handled via `refunded_payment` webhook event
 
 ### Key Components
 
@@ -99,19 +92,12 @@ The bot operates entirely through Next.js API routes, not as a separate process:
 - **Viewport Settings** (`app/layout.tsx`): Disables user scaling and sets maximum scale to 1 for app-like experience
 
 ### Bot Token Test Mode
-The bot instance is created with `/test` suffix for all operations:
+The bot token automatically gets `/test` suffix when `TEST_MODE=true` environment variable is set:
 ```typescript
-new Telegraf<BotContext>(`${BOT_TOKEN}/test`)
+const botToken = TEST_MODE ? `${BOT_TOKEN}/test` : BOT_TOKEN;
+new Telegraf<BotContext>(botToken);
 ```
-This enables Telegram Stars test payments without real transactions.
-
-### Payment Plans
-Defined in `app/api/payments/shared.ts`:
-- `demo`: 1 Star (test payment)
-- `sticker`: 10 Stars (current main offering)
-- `basic`: 50 Stars
-- `premium`: 100 Stars
-- `enterprise`: 250 Stars
+This enables Telegram test environment for testing features like Telegram Stars payments without real transactions.
 
 ### Mobile Optimizations
 - Fullscreen mode requested via `webApp.requestFullscreen()`
@@ -128,7 +114,7 @@ https://your-vercel-app.vercel.app/api/webhook
 
 ## Common Gotchas
 
-- ngrok URLs change on restart - update `.env.local` and restart bot when this happens
+- ngrok URLs change on restart - update `.env.local` and restart dev server when this happens
 - Telegram WebApp only works inside Telegram - show fallback message for web browsers
-- Payment provider token is optional - Stars payments work without it in test mode
-- Invoice payload must be valid JSON with `planId`, `userId`, `timestamp` for validation
+- `TEST_MODE=true` is required for testing Telegram features without real transactions
+- Bot will log whether it's running in TEST or PRODUCTION mode on initialization
