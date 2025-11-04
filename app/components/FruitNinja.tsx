@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Howl } from "howler";
 import * as PIXI from "pixi.js";
+import { createFruitSprite as createFruitSpriteModular, fruitColors as fruitColorsModular, type FruitType } from "./fruits";
 
 // Ensure Pixi has the ticker plugin so app.ticker is defined in v8 builds
 if (!PIXI.Application._plugins?.includes?.(PIXI.TickerPlugin)) {
@@ -16,7 +17,7 @@ interface Fruit {
   vy: number;
   rotation: number;
   rotationSpeed: number;
-  type: "apple" | "banana" | "peach" | "strawberry" | "watermelon" | "bomb";
+  type: FruitType;
   sliced: boolean;
   sliceTime?: number;
   width: number;
@@ -77,7 +78,7 @@ export default function FruitNinja({
     start: null,
   });
 
-  const fruitTypes: Array<"apple" | "banana" | "peach" | "strawberry" | "watermelon"> = [
+  const fruitTypes: Array<Exclude<FruitType, "bomb">> = [
     "apple",
     "banana",
     "peach",
@@ -85,14 +86,7 @@ export default function FruitNinja({
     "watermelon",
   ];
 
-  const fruitColors: Record<string, { main: number; shadow: number; highlight: number }> = {
-    apple: { main: 0xE74C3C, shadow: 0xC0392B, highlight: 0xFF6B6B },
-    banana: { main: 0xF4D03F, shadow: 0xD4AC0D, highlight: 0xF9E79F },
-    peach: { main: 0xF8B88B, shadow: 0xDC7633, highlight: 0xFADBD8 },
-    strawberry: { main: 0xE74292, shadow: 0xAD1457, highlight: 0xF48FB1 },
-    watermelon: { main: 0x58D68D, shadow: 0x229954, highlight: 0xABEBC6 },
-    bomb: { main: 0x2C3E50, shadow: 0x17202A, highlight: 0x566573 },
-  };
+  const fruitColors = fruitColorsModular;
 
   useEffect(() => {
     const savedHighScore = localStorage.getItem("fruitNinjaHighScore");
@@ -221,118 +215,9 @@ export default function FruitNinja({
     return () => clearInterval(timerId);
   }, [gameOver, gameStarted]);
 
-  // Create fruit sprite
+  // Create fruit sprite using modular components
   const createFruitSprite = (fruit: Fruit): PIXI.Graphics => {
-    const graphics = new PIXI.Graphics();
-    const colors = fruitColors[fruit.type];
-
-    if (fruit.type === "bomb") {
-      // Draw bomb
-      graphics.beginFill(colors.main);
-      graphics.drawCircle(0, 0, fruit.width / 2);
-      graphics.endFill();
-
-      // Add highlight
-      graphics.beginFill(0xFFFFFF, 0.3);
-      graphics.drawEllipse(-fruit.width / 5, -fruit.height / 5, fruit.width / 6, fruit.height / 8);
-      graphics.endFill();
-
-      // Add fuse
-      graphics.lineStyle(5, 0x8B4513);
-      graphics.moveTo(0, -fruit.height / 2);
-      graphics.lineTo(0, -fruit.height / 2 - 15);
-
-      // Add spark
-      graphics.beginFill(0xFF4500);
-      graphics.drawCircle(0, -fruit.height / 2 - 15, 4);
-      graphics.endFill();
-    } else if (fruit.type === "watermelon") {
-      // Draw watermelon
-      graphics.beginFill(colors.main);
-      graphics.drawCircle(0, 0, fruit.width / 2);
-      graphics.endFill();
-
-      // Add stripes
-      graphics.lineStyle(3, colors.shadow);
-      for (let i = 0; i < 5; i++) {
-        const angle = (i / 5) * Math.PI * 2;
-        const x1 = Math.cos(angle) * fruit.width / 4;
-        const y1 = Math.sin(angle) * fruit.width / 4;
-        const x2 = Math.cos(angle) * fruit.width / 2;
-        const y2 = Math.sin(angle) * fruit.width / 2;
-        graphics.moveTo(x1, y1);
-        graphics.lineTo(x2, y2);
-      }
-
-      // Add highlight
-      graphics.beginFill(0xFFFFFF, 0.4);
-      graphics.drawEllipse(-fruit.width / 5, -fruit.height / 5, fruit.width / 5, fruit.height / 6);
-      graphics.endFill();
-    } else if (fruit.type === "strawberry") {
-      // Draw strawberry
-      graphics.beginFill(colors.main);
-      graphics.drawCircle(0, 0, fruit.width / 2);
-      graphics.endFill();
-
-      // Add seeds
-      graphics.beginFill(0xF4E04D);
-      for (let i = 0; i < 12; i++) {
-        const angle = (i / 12) * Math.PI * 2;
-        const radius = fruit.width / 3;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
-        graphics.drawCircle(x, y, 2);
-      }
-      graphics.endFill();
-
-      // Add highlight
-      graphics.beginFill(0xFFFFFF, 0.4);
-      graphics.drawEllipse(-fruit.width / 5, -fruit.height / 5, fruit.width / 5, fruit.height / 6);
-      graphics.endFill();
-    } else if (fruit.type === "banana") {
-      // Draw banana
-      graphics.beginFill(colors.main);
-      graphics.drawEllipse(0, 0, fruit.width / 2, fruit.height / 2.5);
-      graphics.endFill();
-
-      // Add spots
-      graphics.beginFill(0x8B4513);
-      for (let i = 0; i < 3; i++) {
-        const x = (Math.random() - 0.5) * fruit.width / 3;
-        const y = (Math.random() - 0.5) * fruit.height / 3;
-        graphics.drawCircle(x, y, 3);
-      }
-      graphics.endFill();
-
-      // Add highlight
-      graphics.beginFill(0xFFFFFF, 0.4);
-      graphics.drawEllipse(-fruit.width / 5, -fruit.height / 5, fruit.width / 5, fruit.height / 6);
-      graphics.endFill();
-    } else {
-      // Apple, Peach - standard
-      graphics.beginFill(colors.main);
-      graphics.drawCircle(0, 0, fruit.width / 2);
-      graphics.endFill();
-
-      // Add stem for apple
-      if (fruit.type === "apple") {
-        graphics.beginFill(0x8B4513);
-        graphics.drawRect(-2, -fruit.height / 2, 4, 10);
-        graphics.endFill();
-
-        // Add leaf
-        graphics.beginFill(0x228B22);
-        graphics.drawEllipse(5, -fruit.height / 2 + 5, 8, 5);
-        graphics.endFill();
-      }
-
-      // Add highlight
-      graphics.beginFill(0xFFFFFF, 0.4);
-      graphics.drawEllipse(-fruit.width / 5, -fruit.height / 5, fruit.width / 5, fruit.height / 6);
-      graphics.endFill();
-    }
-
-    return graphics;
+    return createFruitSpriteModular(fruit.type, fruit.width, fruit.height);
   };
 
   // Create explosion particles

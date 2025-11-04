@@ -24,7 +24,8 @@
       "Bash(timeout /t 3)",
       "Bash(rd /s /q .next)",
       "Bash(npm run build:*)",
-      "Bash(npm i:*)"
+      "Bash(npm i:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []
