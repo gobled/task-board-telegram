@@ -15,25 +15,54 @@ export const APPLE_COLORS: FruitColors = {
 export function createAppleSprite(width: number, height: number): PIXI.Graphics {
   const graphics = new PIXI.Graphics();
 
-  // Draw main apple body
-  graphics.beginFill(APPLE_COLORS.main);
-  graphics.drawCircle(0, 0, width / 2);
-  graphics.endFill();
+  // --- Draw the Apple ---
+      // We'll draw the apple centered around (0, 0) and then
+      // move the entire graphics object to the center of the screen.
+      const appleRadius = 60;
+      const topIndent = 12;
+      const bottomIndent = 6;
 
-  // Add stem
-  graphics.beginFill(0x8B4513);
-  graphics.drawRect(-2, -height / 2, 4, 10);
-  graphics.endFill();
+      // 4. Draw the Apple Body (Red)
+      graphics.beginFill(0xDE3249); // A nice apple red
+      graphics.moveTo(0, -appleRadius + topIndent); // Start at the top indent
 
-  // Add leaf
-  graphics.beginFill(0x228B22);
-  graphics.drawEllipse(5, -height / 2 + 5, 8, 5);
-  graphics.endFill();
+      // Right side
+      graphics.quadraticCurveTo(
+        appleRadius, -appleRadius, // control point
+        appleRadius, 0             // destination point
+      );
+      graphics.quadraticCurveTo(
+        appleRadius, appleRadius,
+        0, appleRadius - bottomIndent
+      );
 
-  // Add highlight
-  graphics.beginFill(0xFFFFFF, 0.4);
-  graphics.drawEllipse(-width / 5, -height / 5, width / 5, height / 6);
-  graphics.endFill();
+      // Left side
+      graphics.quadraticCurveTo(
+        -appleRadius, appleRadius,
+        -appleRadius, 0
+      );
+      graphics.quadraticCurveTo(
+        -appleRadius, -appleRadius,
+        0, -appleRadius + topIndent
+      );
+      graphics.endFill();
+
+      // 5. Draw the Stem (Brown)
+      graphics.beginFill(0x7B4F2A); // Brown
+      // (x, y, width, height)
+      graphics.drawRect(-4, -appleRadius - 18 + topIndent, 8, 20);
+      graphics.endFill();
+
+      // 6. Draw the Leaf (Green)
+      graphics.beginFill(0x799E23); // Green
+      graphics.moveTo(4, -appleRadius); // Start near the stem
+      graphics.quadraticCurveTo(25, -appleRadius - 15, 40, -appleRadius - 5);
+      graphics.quadraticCurveTo(20, -appleRadius, 4, -appleRadius);
+      graphics.endFill();
+
+      // --- Positioning ---
+      
+      
 
   return graphics;
 }
