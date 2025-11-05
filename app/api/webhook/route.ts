@@ -1,6 +1,7 @@
 import { Markup, Telegraf } from 'telegraf';
 import type { Context } from 'telegraf';
 import type { Update } from 'telegraf/types';
+import { recordReferral } from '@/app/lib/referralStorage';
 
 export type BotContext = Context<Update>;
 
@@ -23,6 +24,40 @@ function registerHandlers(bot: Telegraf<BotContext>) {
 
   bot.command('start', async (ctx) => {
     const chatId = ctx.chat?.id;
+    const userId = ctx.from?.id;
+
+    // Check for referral code in the start command
+    const startPayload = ctx.message?.text?.split(' ')[1]; // Get parameter after /start
+
+    if (startPayload && userId) {
+      // Check if it's an invite referral (format: invite_USERID)
+      const inviteMatch = startPayload.match(/^invite_(\d+)$/);
+      if (inviteMatch) {
+        const referrerId = parseInt(inviteMatch[1], 10);
+
+        if (!isNaN(referrerId) && referrerId !== userId) {
+          try {
+            const success = await recordReferral(userId, referrerId);
+            if (success) {
+              console.log(`Referral recorded: User ${userId} was referred by ${referrerId}`);
+              // Optionally notify the referrer
+              try {
+                await ctx.telegram.sendMessage(
+                  referrerId,
+                  '🎉 Someone joined using your invite link! Check the Referrals tab to claim your reward (3 plays)!'
+                );
+              } catch (notifyError) {
+                // Ignore if we can't notify (user might have blocked bot)
+                console.log('Could not notify referrer:', notifyError);
+              }
+            }
+          } catch (error) {
+            console.error('Error recording referral:', error);
+          }
+        }
+      }
+    }
+
     const encodedChatId = chatId ? Buffer.from(String(chatId)).toString('base64') : '';
     const webAppUrl = encodedChatId ? `${WEBAPP_URL}?startapp=${encodedChatId}` : WEBAPP_URL;
 
