@@ -183,7 +183,7 @@ export default function HomePage() {
   };
 
   const handleShareForPlay = async () => {
-    const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME;
+    const botUsername = process.env.BOT_USERNAME;
     if (!webApp) {
       console.log("Share tapped outside Telegram");
       return;
