@@ -34,10 +34,18 @@ interface SliceTrail {
 
 export default function FruitNinja({
   onGameOver,
-  onBack
+  onBack,
+  allowedPlaysLeft,
+  onConsumePlay,
+  onShareForPlay,
+  shareBonusClaimed,
 }: {
   onGameOver?: (score: number) => void;
   onBack?: () => void;
+  allowedPlaysLeft?: number;
+  onConsumePlay?: () => void;
+  onShareForPlay?: () => void;
+  shareBonusClaimed?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [score, setScore] = useState(0);
@@ -62,7 +70,7 @@ export default function FruitNinja({
   const gameOverRef = useRef(gameOver);
   const livesRef = useRef(lives);
   const onGameOverRef = useRef(onGameOver);
-  const gameStartedRef = useRef(true); // Initialize as true to match auto-start
+  const gameStartedRef = useRef(true); // Match auto-start
   const isMutedRef = useRef(isMuted);
 
   // Sound effects using Howler.js
@@ -193,8 +201,8 @@ export default function FruitNinja({
           setLastScore(scoreRef.current);
           setGameOver(true);
           gameOverRef.current = true;
-          setGameStarted(false);
-          gameStartedRef.current = false;
+          // Keep gameStarted true to avoid internal overlay; stop spawns via gameOverRef
+          gameStartedRef.current = true;
           playSound('over');
           if (scoreRef.current > highScoreRef.current) {
             setHighScore(scoreRef.current);
@@ -411,8 +419,8 @@ export default function FruitNinja({
           gridGraphics.lineTo(app.screen.width, i);
         }
 
-        // Only spawn new fruits if game has started
-        if (gameStartedRef.current) {
+        // Only spawn new fruits if game has started and not over
+        if (gameStartedRef.current && !gameOverRef.current) {
           const now = Date.now();
           const timeElapsed = 60 - timeLeftRef.current;
 
@@ -475,8 +483,8 @@ export default function FruitNinja({
                     setLastScore(scoreRef.current);
                     setGameOver(true);
                     gameOverRef.current = true;
-                    setGameStarted(false);
-                    gameStartedRef.current = false;
+                    // Keep gameStarted true to avoid internal overlay; stop spawns via gameOverRef
+                    gameStartedRef.current = true;
                     playSound('over');
                     if (scoreRef.current > highScoreRef.current) {
                       setHighScore(scoreRef.current);
@@ -654,6 +662,14 @@ export default function FruitNinja({
   };
 
   const handleStartOrRestart = () => {
+    // Block if no plays are left
+    if (typeof allowedPlaysLeft === 'number' && allowedPlaysLeft <= 0) {
+      return;
+    }
+
+    // Consume a play on each run start
+    onConsumePlay?.();
+
     // Play start sound when manually restarting
     playSound('start');
 
@@ -701,13 +717,13 @@ export default function FruitNinja({
       {!gameStarted && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-10 text-center">
-            <h1 className="text-5xl font-bold text-white mb-2">Pika Splash</h1>
+            <h1 className="text-4xl font-bold text-white mb-2">Pika Splash</h1>
             <p className="text-slate-400 mb-8">Slice the fruits, avoid the bombs!</p>
 
             {/* Show last score if game just ended */}
             {gameOver && lastScore > 0 && (
               <div className="mb-6">
-                <p className="text-5xl font-bold text-white">{lastScore}</p>
+                <p className="text-4xl font-bold text-white">{lastScore}</p>
                 <p className="mt-2 text-sm text-slate-400">Your Score</p>
               </div>
             )}
@@ -743,13 +759,55 @@ export default function FruitNinja({
             </div>
 
             {/* Start/Restart button */}
+            {/* Plays left indicator */}
+            {typeof allowedPlaysLeft === 'number' && (
+              <div className="mb-4">
+                <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-slate-200 border border-white/10">
+                  Plays left: {allowedPlaysLeft}
+                </span>
+              </div>
+            )}
+
             <button
               type="button"
               onClick={handleStartOrRestart}
-              className="w-full inline-flex items-center justify-center rounded-full bg-emerald-500 px-8 py-4 text-xl font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+              disabled={typeof allowedPlaysLeft === 'number' && allowedPlaysLeft <= 0}
+              className={`w-full inline-flex items-center justify-center rounded-full px-8 py-4 text-xl font-semibold text-white shadow-lg transition focus:outline-none focus-visible:ring-2 ${
+                typeof allowedPlaysLeft === 'number' && allowedPlaysLeft <= 0
+                  ? 'bg-gray-600 cursor-not-allowed'
+                  : 'bg-emerald-500 shadow-emerald-500/30 hover:bg-emerald-400 focus-visible:ring-emerald-300'
+              }`}
             >
-              {gameOver ? "Play Again" : "Start Game"}
+              {typeof allowedPlaysLeft === 'number' && allowedPlaysLeft <= 0
+                ? 'No plays left'
+                : gameOver ? 'Play Again' : 'Start Game'}
             </button>
+
+            {/* Share to gain one play when out of plays */}
+            {typeof allowedPlaysLeft === 'number' && allowedPlaysLeft <= 0 && (
+              <button
+                type="button"
+                onClick={onShareForPlay}
+                disabled={shareBonusClaimed}
+                className={`mt-3 w-full inline-flex items-center justify-center rounded-full px-8 py-3 text-sm font-semibold transition border ${
+                  !shareBonusClaimed
+                    ? 'bg-blue-500/90 text-white border-blue-400 hover:bg-blue-500'
+                    : 'bg-gray-700 text-slate-300 border-white/10 cursor-not-allowed'
+                }`}
+              >
+                {shareBonusClaimed ? 'Share bonus claimed' : 'Share in Telegram for +1 play'}
+              </button>
+            )}
+
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="mt-3 w-full inline-flex items-center justify-center rounded-full bg-white/10 px-8 py-3 text-sm font-semibold text-slate-100 border border-white/10 hover:bg-white/20 transition"
+              >
+                Exit
+              </button>
+            )}
           </div>
         </div>
       )}

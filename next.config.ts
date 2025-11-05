@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  env: {
+    BOT_USERNAME: process.env.BOT_USERNAME ?? "",
+  },
   async headers() {
     return [
       {
